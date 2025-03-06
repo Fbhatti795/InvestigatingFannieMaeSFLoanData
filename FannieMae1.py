@@ -20,8 +20,6 @@ import GitPython
 #Will try to use Flask to create a dynamic webapp that allows for a UI that lets a user choose which quarter of data from Fannie Mae to choose for analysis from a dropdown.
 #Will try to use FannieMae API or AWS w/ import boto3. Not sure yet how to.
 
-#Better to use use 
-
 #New development as of March 6th 2025. Figured out how to use Microsoft Graph to download files from OneDrive. Will clean the data from Fannie Mae for it to be only the 20 columns that are needed, and then upload them to OneDrive. When the script is run, the files can be downloaded locally on a temp directory that is chosen by the user when prompted. Those files are deleted at the end of the script. 
 
 
@@ -178,10 +176,10 @@ len(fanniemae_2020Q1['ZipShort'].unique())
 # import json
 # import requests
 # 
-# with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
-#      counties = json.load(response)
+#with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+#     counties = json.load(response)
 #      
-# counties["features"][0]
+#counties["features"][0]
 # =============================================================================
 
 #import plotly
@@ -234,6 +232,7 @@ DF_choro_FTHBI_TOT.head(5)
 #https://conheroineivaj.blogspot.com/2016/11/3-digit-zip-code-map-united-states.html
 
 #Need to generate my own .json file for the boundaries of the 3-digit zip code regions. 
+#https://gis.stackexchange.com/questions/116308/where-can-i-get-a-topojson-with-3-digit-zip-codes-zip3-shapes
 #https://github.com/gweissman86/three_digit_zips?tab=readme-ov-file
 #https://www.statsilk.com/maps/convert-esri-shapefile-map-geojson-format
 
@@ -245,13 +244,29 @@ from urllib.request import urlopen
 import json
 import requests
 
-with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
-#      counties = json.load(response)
-#      
-# counties["features"][0]
+with urlopen('https://raw.githubusercontent.com/Fbhatti795/InvestigatingFannieMaeSFLoanData/b00794b12912277ea418a5c36bd994ff4efd09ef/three_dig_zips.json') as response:
+    ThreeDigitZips = json.load(response)     
+
+ThreeDigitZips["features"][0]
 
 colorscale = ["rgb(255, 51, 51)", "rgb(210, 231, 154)", "rgb(94, 179, 39)", "rgb(67, 136, 33)", "rgb(33, 74, 12)"]
-finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, locations=['GU', 'VI', 'AK', 'VT', 'WY', 'ND', 'PR', 'ME', 'WV', 'DC', 'SD', 'RI', 'DE', 'NH', 'HI', 'MT', 'MS', 'ID', 'AR', 'KS', 'OK', 'NM', 'KY', 'NE', 'AL', 'LA', 'UT', 'IA', 'CT', 'MO', 'NV', 'SC', 'OR', 'MA', 'TN', 'IN', 'WI', 'MD', 'VA', 'CO', 'AZ', 'MN', 'WA', 'NJ', 'MI', 'OH', 'NC', 'GA', 'PA', 'IL', 'NY', 'CA', 'FL', 'TX'], color = 'Percentage (Y)', locationmode="USA-states", title = "Percentage of FTHBI Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBI'})
+#finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, locations=['GU', 'VI', 'AK', 'VT', 'WY', 'ND', 'PR', 'ME', 'WV', 'DC', 'SD', 'RI', 'DE', 'NH', 'HI', 'MT', 'MS', 'ID', 'AR', 'KS', 'OK', 'NM', 'KY', 'NE', 'AL', 'LA', 'UT', 'IA', 'CT', 'MO', 'NV', 'SC', 'OR', 'MA', 'TN', 'IN', 'WI', 'MD', 'VA', 'CO', 'AZ', 'MN', 'WA', 'NJ', 'MI', 'OH', 'NC', 'GA', 'PA', 'IL', 'NY', 'CA', 'FL', 'TX'], color = 'Percentage (Y)', locationmode="USA-states", title = "Percentage of FTHBI Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBI'})
+
+#ValueError: All arguments should have the same length. The length of column argument `df[color]` is 888, whereas the length of previously-processed arguments ['locations'] is 54
+#Need to make a list of all 888 3 Digit Zip Codes. 
+
+arraythreezips = (fanniemae_2020Q1['ZipShort'].unique())
+listthreezips = arraythreezips.tolist()
+print(listthreezips)
+#When the list is printed, then you can see that the 3rd to last value is listed as nan. That zip code is most probably the 3 digit zip code 000. That's why there was a discrepancy  of 888 total items in one list, and 889 in another. Let's set listthreezips[886] = 000. 
+
+listthreezips[886] = 000
+#Done. Well, still shows up as 'nan'. Both the number of color(s) and the unique number of 3 digit Zip codes are the same quantity of 888. or 889 if you count that 'nan' value. 
+
+DF_choro_FTHBI_TOT = DF_choro_FTHBI_TOT.reset_index()
+#Without the above command, there is an error because the 3 digit zip codes are the index of the dataframe.
+finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, geojson= ThreeDigitZips, locations='ZipShort', color = 'Percentage (Y)', title = "Percentage of FTHB's Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBs'})
+
 finalchoro_perc_FTHBI_byZipShort.show(renderer='browser') 
 
 #fanniemae_2020Q1['FTHBI'].head()
