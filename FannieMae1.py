@@ -11,6 +11,7 @@ import pandas as pd
 import os
 #import glob
 #import sklearn
+
 import GitPython
 
 #Eventually will write in code to automatically push this .py file to GitHub public repo for this project.
@@ -18,6 +19,10 @@ import GitPython
 #Will try to use containerization with Docker to make an environment that contains all the necessary packages for this script to run properly.
 #Will try to use Flask to create a dynamic webapp that allows for a UI that lets a user choose which quarter of data from Fannie Mae to choose for analysis from a dropdown.
 #Will try to use FannieMae API or AWS w/ import boto3. Not sure yet how to.
+
+#Better to use use 
+
+#New development as of March 6th 2025. Figured out how to use Microsoft Graph to download files from OneDrive. Will clean the data from Fannie Mae for it to be only the 20 columns that are needed, and then upload them to OneDrive. When the script is run, the files can be downloaded locally on a temp directory that is chosen by the user when prompted. Those files are deleted at the end of the script. 
 
 
 #import onedrivesdk_fork as onedrivesdkposer
@@ -209,6 +214,47 @@ import plotly.express as pxexp
 colorscale = ["rgb(255, 51, 51)", "rgb(210, 231, 154)", "rgb(94, 179, 39)", "rgb(67, 136, 33)", "rgb(33, 74, 12)"]
 finalchoro_rel_oftotloans_bystate = pxexp.choropleth(asc_ordered_colorvect, locations=['GU', 'VI', 'AK', 'VT', 'WY', 'ND', 'PR', 'ME', 'WV', 'DC', 'SD', 'RI', 'DE', 'NH', 'HI', 'MT', 'MS', 'ID', 'AR', 'KS', 'OK', 'NM', 'KY', 'NE', 'AL', 'LA', 'UT', 'IA', 'CT', 'MO', 'NV', 'SC', 'OR', 'MA', 'TN', 'IN', 'WI', 'MD', 'VA', 'CO', 'AZ', 'MN', 'WA', 'NJ', 'MI', 'OH', 'NC', 'GA', 'PA', 'IL', 'NY', 'CA', 'FL', 'TX'], color = 'loanid', locationmode="USA-states", title = "Scaled Representation of Number of Mortgages for 2020 Q1 by State",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(-1,4), scope="usa", labels={'loanid':'Z-score of Number of Mortgages'})
 finalchoro_rel_oftotloans_bystate.show(renderer='browser') 
+
+#Making second visualization that is a choropleth of 889 zip shorts that shows 0 to 100 % FTHBI.
+#fanniemae_2020Q1.groupby(['FTHBI','State'])[['loanid']].count()
+(fanniemae_2020Q1['ZipShort'].unique())
+DF_choro_FTHBI_TOT = fanniemae_2020Q1.groupby(['ZipShort'])[['FTHBI']].count()
+DF_choro_FTHBI_numb_y_only = fanniemae_2020Q1_FTHBI_Y_only.groupby(['ZipShort'])[['FTHBI']].count()
+
+
+fanniemae_2020Q1_FTHBI_N_only = fanniemae_2020Q1[fanniemae_2020Q1['FTHBI']=='N']
+fanniemae_2020Q1_FTHBI_N_only.columns = headings
+DF_choro_FTHBI_numb_n_only = fanniemae_2020Q1_FTHBI_N_only.groupby(['ZipShort'])[['FTHBI']].count()
+#Verily, 1394 = 7296 = 8690.
+
+DF_choro_FTHBI_TOT["Percentage (Y)"] = ( DF_choro_FTHBI_numb_y_only['FTHBI'] /  DF_choro_FTHBI_TOT['FTHBI'] ) * 100
+DF_choro_FTHBI_TOT.head(5)
+
+#To understand 3-digit Zip Codes. 
+#https://conheroineivaj.blogspot.com/2016/11/3-digit-zip-code-map-united-states.html
+
+#Need to generate my own .json file for the boundaries of the 3-digit zip code regions. 
+#https://github.com/gweissman86/three_digit_zips?tab=readme-ov-file
+#https://www.statsilk.com/maps/convert-esri-shapefile-map-geojson-format
+
+#Going to upload the .json file to the Github repo for this project and then call for the .json file within this script to generate the choropleth.
+
+import plotly.io as pio
+pio.renderers.default='browser'
+from urllib.request import urlopen
+import json
+import requests
+
+with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+#      counties = json.load(response)
+#      
+# counties["features"][0]
+
+colorscale = ["rgb(255, 51, 51)", "rgb(210, 231, 154)", "rgb(94, 179, 39)", "rgb(67, 136, 33)", "rgb(33, 74, 12)"]
+finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, locations=['GU', 'VI', 'AK', 'VT', 'WY', 'ND', 'PR', 'ME', 'WV', 'DC', 'SD', 'RI', 'DE', 'NH', 'HI', 'MT', 'MS', 'ID', 'AR', 'KS', 'OK', 'NM', 'KY', 'NE', 'AL', 'LA', 'UT', 'IA', 'CT', 'MO', 'NV', 'SC', 'OR', 'MA', 'TN', 'IN', 'WI', 'MD', 'VA', 'CO', 'AZ', 'MN', 'WA', 'NJ', 'MI', 'OH', 'NC', 'GA', 'PA', 'IL', 'NY', 'CA', 'FL', 'TX'], color = 'Percentage (Y)', locationmode="USA-states", title = "Percentage of FTHBI Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBI'})
+finalchoro_perc_FTHBI_byZipShort.show(renderer='browser') 
+
+#fanniemae_2020Q1['FTHBI'].head()
 
 # =============================================================================
 # dict(
