@@ -4,13 +4,14 @@ Created on Tue Aug 22 13:38:33 2023
 
 @author: Fthulu
 """
-#import seaborn as sns
+import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-#import numpy as np
+import numpy as np
 import os
-#import glob
-#import sklearn
+import geopandas as gpd
+import glob
+import sklearn
 
 import GitPython
 
@@ -228,6 +229,8 @@ DF_choro_FTHBI_numb_n_only = fanniemae_2020Q1_FTHBI_N_only.groupby(['ZipShort'])
 DF_choro_FTHBI_TOT["Percentage (Y)"] = ( DF_choro_FTHBI_numb_y_only['FTHBI'] /  DF_choro_FTHBI_TOT['FTHBI'] ) * 100
 DF_choro_FTHBI_TOT.head(5)
 
+#Randomly looking at the 3-digit zip code of 060 with the percentage of FTHB of 16.041427% from http://www.maphill.com/united-states/connecticut/060/maps/political-shades-map/ the percentage seems accurate because from personal experience I have heard of many hedgefund managers owning properties in CT, and I would suspect that they are not FTHB's.
+
 #To understand 3-digit Zip Codes. 
 #https://conheroineivaj.blogspot.com/2016/11/3-digit-zip-code-map-united-states.html
 
@@ -237,17 +240,38 @@ DF_choro_FTHBI_TOT.head(5)
 #https://www.statsilk.com/maps/convert-esri-shapefile-map-geojson-format
 
 #Going to upload the .json file to the Github repo for this project and then call for the .json file within this script to generate the choropleth.
+  
+#I've decided to use another method than this one. I realized that there is a package named geopandas that will take the shape files and convert them to .json files that are usable by the plotly package.'
+
+#Reading shape file
+gdf = gpd.read_file("C:/Users/Faisal Bhatti/OneDrive/Documents/Downloads/FannieMaePROJECT/three_digit_zips-main/three_digit_zips-main/three_dig_zips/three_dig_zips.shp")
+gdf.to_file("ThreeDigitZips.geojson")
+
+import sys
+#from PySide6.QtWidgets import QApplication
+#from PySide6.QtWebEngineWidgets import QWebEngineView
+#from PySide6.QtCore import QUrl
+#from pathlib import Path
 
 import plotly.io as pio
 pio.renderers.default='browser'
 from urllib.request import urlopen
+import plotly
 import json
+import plotly.graph_objects as go
 import requests
 
-with urlopen('https://raw.githubusercontent.com/Fbhatti795/InvestigatingFannieMaeSFLoanData/b00794b12912277ea418a5c36bd994ff4efd09ef/three_dig_zips.json') as response:
-    ThreeDigitZips = json.load(response)     
+#Inspired from https://stackoverflow.com/questions/79279083/how-to-use-a-local-geojson-file-world-110m-json-with-plotly-in-pyside6-to-prev
+#Path of shape file; not as a json file. Can use the .geojson file created by the geopandas package in the working directory of the project.
+#"C:/Users/Faisal Bhatti/OneDrive/Documents/Downloads/FannieMaePROJECT/"
 
-ThreeDigitZips["features"][0]
+#geojson_path = Path(.resolve().parent / 'map1.geojson'
+#with open(geojson_path, 'r') as f:
+
+#with urlopen('https://raw.githubusercontent.com/Fbhatti795/InvestigatingFannieMaeSFLoanData/b00794b12912277ea418a5c36bd994ff4efd09ef/three_dig_zips.json') as response:
+#with urlopen('https://raw.githubusercontent.com/Fbhatti795/InvestigatingFannieMaeSFLoanData/refs/heads/main/three_dig_zips_repaired.json') as response:
+#    ThreeDigitZips = json.load(response)     
+#ThreeDigitZips["features"][0]
 
 colorscale = ["rgb(255, 51, 51)", "rgb(210, 231, 154)", "rgb(94, 179, 39)", "rgb(67, 136, 33)", "rgb(33, 74, 12)"]
 #finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, locations=['GU', 'VI', 'AK', 'VT', 'WY', 'ND', 'PR', 'ME', 'WV', 'DC', 'SD', 'RI', 'DE', 'NH', 'HI', 'MT', 'MS', 'ID', 'AR', 'KS', 'OK', 'NM', 'KY', 'NE', 'AL', 'LA', 'UT', 'IA', 'CT', 'MO', 'NV', 'SC', 'OR', 'MA', 'TN', 'IN', 'WI', 'MD', 'VA', 'CO', 'AZ', 'MN', 'WA', 'NJ', 'MI', 'OH', 'NC', 'GA', 'PA', 'IL', 'NY', 'CA', 'FL', 'TX'], color = 'Percentage (Y)', locationmode="USA-states", title = "Percentage of FTHBI Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBI'})
@@ -265,9 +289,20 @@ listthreezips[886] = 000
 
 DF_choro_FTHBI_TOT = DF_choro_FTHBI_TOT.reset_index()
 #Without the above command, there is an error because the 3 digit zip codes are the index of the dataframe.
-finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, geojson= ThreeDigitZips, locations='ZipShort', color = 'Percentage (Y)', title = "Percentage of FTHB's Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBs'})
+
+3DigitZips = requests.get("https://raw.githubusercontent.com/Fbhatti795/InvestigatingFannieMaeSFLoanData/refs/heads/main/three_dig_zips.json").json() 
+finalchoro_perc_FTHBI_byZipShort = pxexp.choropleth(DF_choro_FTHBI_TOT, geojson= 3DigitZips, locations='ZipShort', color = 'Percentage (Y)', title = "Percentage of FTHB's Per 889 3-Digit Zip Codes for 2020 Q1",subtitle="Source: Single-Family Loan Performance Data | Fannie Mae", color_continuous_scale = colorscale, color_continuous_midpoint=0, range_color=(0,100), scope="usa", labels={'Percentage (Y)':'% of FTHBs'})
 
 finalchoro_perc_FTHBI_byZipShort.show(renderer='browser') 
+
+#Remade the 3-Digit Zip Code .json file using MapShaper based on:
+    #https://community.plotly.com/t/choropleth-map-not-working-with-my-geojson-data/43934
+    #https://community.plotly.com/t/choropleth-map-not-loading-my-geojson-data/51444
+    
+#Updated link address for GitHub to 'repaired' .json file"
+#https://raw.githubusercontent.com/Fbhatti795/InvestigatingFannieMaeSFLoanData/refs/heads/main/three_dig_zips_repaired.json
+
+#Still not properly generating the boundaries for each 3 digit zip code. I am frustrated.
 
 #fanniemae_2020Q1['FTHBI'].head()
 
